@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ДЗ 2 — Основное свойство дроби</title>
+  <link rel="stylesheet" href="https://dmitrydruzhkovv-arch.github.io/di-brand-kit/brand-kit.css">
+  <style>
+    html { scroll-behavior: smooth; }
+    [hidden] { display: none !important; }
+
+    /* ─── Старт-обложка ─── */
+    .cover {
+      text-align: center; padding: 38px 6px 12px;
+      animation: lk-in .4s ease;
+    }
+    .cover .lk-kicker { justify-content: center; }
+    .cover .lk-lead { max-width: 420px; margin-left: auto; margin-right: auto; }
+    .cover-meta {
+      font-family: var(--lk-mono); font-size: 13px; color: var(--lk-muted);
+      letter-spacing: .04em; margin: 18px 0 24px;
+    }
+    .cover-btn { min-width: 210px; }
+
+    /* ─── Финиш: уровень результата ─── */
+    .final-tier { font-size: 17px; font-weight: 800; margin-bottom: 14px; }
+
+    /* ─── Шапка с прогрессом + streak ─── */
+    .hw-header {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(10, 6, 16, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--lk-line);
+      padding: 11px 18px;
+    }
+    .hw-header-inner {
+      max-width: 560px; margin: 0 auto;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .hw-prog-label {
+      font-family: var(--lk-mono); font-size: 12px; font-weight: 700;
+      color: var(--lk-muted); white-space: nowrap; letter-spacing: .08em;
+    }
+    .streak-pill {
+      font-family: var(--lk-mono); font-size: 12px; font-weight: 700;
+      color: #FB923C; white-space: nowrap; letter-spacing: .03em;
+      animation: lk-in .3s ease;
+    }
+
+    /* ─── Карточка задания ─── */
+    .task-card {
+      margin-bottom: 18px;
+      transition: border-color .4s;
+    }
+    .task-card.is-done { border-color: rgba(79, 70, 229, .5); }
+
+    .task-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .task-label-wrap { display: flex; align-items: center; gap: 8px; }
+    .task-label {
+      font-family: var(--lk-mono); font-size: 12px; font-weight: 700;
+      letter-spacing: .13em; text-transform: uppercase; color: var(--lk-violet);
+    }
+    .task-done-check {
+      color: var(--lk-ok); font-size: 14px; opacity: 0;
+      transition: opacity .3s;
+    }
+    .task-card.is-done .task-done-check { opacity: 1; }
+    .task-diff { font-size: 17px; line-height: 1; }
+
+    .task-intro {
+      font-size: 15px; line-height: 1.6; color: var(--lk-muted);
+      margin: 0 0 16px;
+    }
+
+    /* ─── Кнопка Проверить ─── */
+    .check-btn {
+      width: 100%; margin-top: 18px;
+    }
+    .check-btn:disabled {
+      opacity: .38; cursor: default;
+      transform: none !important; box-shadow: none !important;
+    }
+    @keyframes btn-shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-5px)}
+      40%{transform:translateX(5px)}
+      60%{transform:translateX(-4px)}
+      80%{transform:translateX(4px)}
+    }
+    .check-btn.shake { animation: btn-shake .35s ease; }
+
+    /* ─── Разбор ─── */
+    .task-feedback {
+      display: none;
+      margin-top: 14px; padding: 14px 16px;
+      border-radius: var(--lk-r-xl);
+      background: rgba(79, 70, 229, .09);
+      border: 1px solid rgba(79, 70, 229, .22);
+      font-size: 14px; line-height: 1.65;
+    }
+    .task-feedback.show { display: block; animation: lk-in .35s ease; }
+    .fb-label {
+      font-family: var(--lk-mono); font-size: 10px; font-weight: 700;
+      letter-spacing: .16em; text-transform: uppercase;
+      color: var(--lk-indigo); margin-bottom: 9px;
+    }
+    .fb-p { margin: 0 0 9px; }
+    .fb-p:last-child { margin-bottom: 0; }
+
+    /* ─── Дроби ─── */
+    .frac {
+      display: inline-flex; flex-direction: column; align-items: center;
+      font-family: var(--lk-mono); vertical-align: middle; line-height: 1.1;
+    }
+    .frac .fn {
+      border-bottom: 1.5px solid currentColor;
+      padding: 0 5px 2px; font-size: .85em;
+    }
+    .frac .fd { padding: 2px 5px 0; font-size: .85em; }
+    .mixed-num {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-family: var(--lk-mono); vertical-align: middle;
+    }
+
+    /* ─── Общий: строка с input ─── */
+    .input-row {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 14px 14px; margin-bottom: 9px;
+      background: var(--lk-surface); border: 1.5px solid var(--lk-line);
+      border-radius: var(--lk-r-lg); transition: border-color .25s, background .25s;
+    }
+    .input-row.is-correct { border-color: var(--lk-ok); background: rgba(52,211,153,.08); }
+    .input-row.is-wrong   { border-color: var(--lk-bad); background: rgba(244,63,94,.08); }
+    .input-src { font-size: 22px; }
+    .input-arrow { color: var(--lk-muted); font-size: 16px; flex: 0; }
+    .input-frac-col {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .input-num-wrap {
+      border-bottom: 1.5px solid var(--lk-muted);
+      padding-bottom: 3px; margin-bottom: 3px;
+    }
+    .input-den {
+      font-family: var(--lk-mono); font-size: 17px; font-weight: 700; color: var(--lk-muted);
+    }
+    .input-field {
+      width: 52px; height: 50px; text-align: center;
+      font-family: var(--lk-mono); font-size: 20px; font-weight: 700;
+      background: rgba(255,255,255,.05);
+      border: 1.5px solid var(--lk-line); border-radius: var(--lk-r-md);
+      color: var(--lk-ink); outline: none; -moz-appearance: textfield;
+    }
+    .input-field::-webkit-inner-spin-button,
+    .input-field::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .input-field:focus { border-color: var(--lk-violet); }
+    .input-field[disabled] { opacity: .6; }
+
+    /* ─── З1: Верно / Неверно ─── */
+    .tf-item {
+      padding: 13px 15px;
+      background: var(--lk-surface); border: 1.5px solid var(--lk-line);
+      border-radius: var(--lk-r-lg); margin-bottom: 9px;
+      transition: border-color .25s, background .25s;
+    }
+    .tf-item.is-correct { border-color: var(--lk-ok); background: rgba(52,211,153,.08); }
+    .tf-item.is-wrong   { border-color: var(--lk-bad); background: rgba(244,63,94,.08); }
+    .tf-text { font-size: 15px; line-height: 1.65; margin-bottom: 10px; }
+    .tf-btns { display: flex; gap: 8px; }
+    .tf-btn {
+      flex: 1; padding: 9px 8px;
+      font-size: 14px; font-weight: 700; font-family: var(--lk-font);
+      border: 1.5px solid var(--lk-line); border-radius: var(--lk-r-md);
+      background: transparent; color: var(--lk-muted); cursor: pointer;
+      transition: all .15s;
+    }
+    .tf-btn:not([disabled]):hover { border-color: var(--lk-indigo); color: var(--lk-ink); }
+    .tf-btn.selected {
+      border-color: var(--lk-violet); color: var(--lk-ink);
+      background: rgba(168,85,247,.12);
+    }
+    .tf-btn[disabled] { cursor: default; }
+
+    /* ─── З3: Множественный выбор (multi_choice) ─── */
+    .mc-opt {
+      display: flex; align-items: flex-start; gap: 10px; width: 100%;
+      padding: 12px 15px; margin-bottom: 8px;
+      background: var(--lk-surface); border: 1.5px solid var(--lk-line);
+      border-radius: var(--lk-r-lg); cursor: pointer; text-align: left;
+      font-family: var(--lk-font); font-size: 14px; line-height: 1.55;
+      color: var(--lk-ink); transition: all .15s;
+    }
+    .mc-opt:not([disabled]):hover { border-color: var(--lk-indigo); }
+    .mc-opt.selected {
+      border-color: var(--lk-violet); background: rgba(168,85,247,.11);
+    }
+    .mc-opt.is-correct { border-color: var(--lk-ok)  !important; background: rgba(52,211,153,.10) !important; }
+    .mc-opt.is-wrong   { border-color: var(--lk-bad) !important; background: rgba(244,63,94,.08) !important; }
+    .mc-opt[disabled] { cursor: default; }
+    .mc-check {
+      flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px;
+      border: 1.5px solid var(--lk-line); border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; transition: all .15s; color: transparent;
+    }
+    .mc-opt.selected .mc-check { background: var(--lk-violet); border-color: var(--lk-violet); color: #fff; }
+    .mc-key {
+      font-family: var(--lk-mono); font-size: 12px; font-weight: 700;
+      color: var(--lk-indigo); flex-shrink: 0; margin-top: 2px;
+    }
+    .mc-text { flex: 1; }
+
+    /* ─── З4: Заполни пропуски (fill_blanks) ─── */
+    .fb-row {
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 14px 15px; margin-bottom: 9px;
+      background: var(--lk-surface); border: 1.5px solid var(--lk-line);
+      border-radius: var(--lk-r-lg); transition: border-color .25s, background .25s;
+    }
+    .fb-row.is-correct { border-color: var(--lk-ok); background: rgba(52,211,153,.08); }
+    .fb-row.is-wrong   { border-color: var(--lk-bad); background: rgba(244,63,94,.08); }
+    .fb-eq {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      font-size: 24px; font-weight: 700;
+    }
+    .fb-eq-sign { color: var(--lk-muted); font-size: 18px; font-weight: 400; }
+    .fb-input {
+      width: 68px; height: 36px; text-align: center;
+      font-family: var(--lk-mono); font-size: 15px; font-weight: 700;
+      background: rgba(255,255,255,.07);
+      border: 1.5px solid var(--lk-line); border-radius: var(--lk-r-md);
+      color: var(--lk-ink); outline: none;
+    }
+    .fb-input:focus { border-color: var(--lk-violet); }
+    .fb-input[disabled] { opacity: .6; }
+    .fb-hint-text {
+      font-size: 13px; color: var(--lk-muted); font-style: italic; line-height: 1.45;
+    }
+
+    /* ─── З5: Упорядочи ─── */
+    .sort-list { display: flex; flex-direction: column; gap: 7px; }
+    .sort-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px;
+      background: var(--lk-surface); border: 1.5px solid var(--lk-line);
+      border-radius: var(--lk-r-lg); cursor: grab;
+      transition: border-color .2s, background .2s, opacity .2s;
+      user-select: none; -webkit-user-select: none;
+    }
+    .sort-item.is-dragging { opacity: .4; }
+    .sort-item.is-drag-over { border-color: var(--lk-violet); background: rgba(168,85,247,.11); }
+    .sort-item.is-correct { border-color: var(--lk-ok); background: rgba(52,211,153,.08); cursor: default; }
+    .sort-item.is-wrong   { border-color: var(--lk-bad); background: rgba(244,63,94,.08); cursor: default; }
+    .sort-frac { flex: 1; text-align: center; font-size: 22px; font-weight: 700; }
+    .sort-arrows { display: flex; flex-direction: column; gap: 3px; }
+    .sort-arrow {
+      width: 28px; height: 28px; border: none;
+      background: rgba(255,255,255,.06); border-radius: 7px;
+      color: var(--lk-muted); cursor: pointer; font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .12s;
+    }
+    .sort-arrow:not([disabled]):hover { background: rgba(168,85,247,.2); color: var(--lk-violet); }
+    .sort-arrow[disabled] { opacity: .25; cursor: default; }
+
+    /* ─── З6: Найди ошибку ─── */
+    .find-q {
+      font-size: 14px; font-weight: 700; color: var(--lk-muted); margin-bottom: 11px;
+    }
+
+    /* ─── З7: Сократи или нельзя (reduce_or_cannot) ─── */
+    .rnc-row {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+      padding: 13px 14px; margin-bottom: 9px;
+      background: var(--lk-surface); border: 1.5px solid var(--lk-line);
+      border-radius: var(--lk-r-lg); transition: border-color .25s, background .25s;
+    }
+    .rnc-row.is-correct { border-color: var(--lk-ok); background: rgba(52,211,153,.08); }
+    .rnc-row.is-wrong   { border-color: var(--lk-bad); background: rgba(244,63,94,.08); }
+    .rnc-frac-box { font-size: 22px; font-weight: 700; flex: 0 0 auto; }
+    .rnc-arrow { color: var(--lk-muted); font-size: 16px; flex: 0; }
+    .rnc-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .rnc-text-input {
+      width: 88px; height: 44px; text-align: center;
+      font-family: var(--lk-mono); font-size: 15px; font-weight: 700;
+      background: rgba(255,255,255,.05);
+      border: 1.5px solid var(--lk-line); border-radius: var(--lk-r-md);
+      color: var(--lk-ink); outline: none;
+    }
+    .rnc-text-input:focus { border-color: var(--lk-violet); }
+    .rnc-text-input[disabled] { opacity: .5; }
+    .rnc-or {
+      font-size: 12px; color: var(--lk-muted); font-family: var(--lk-mono);
+      letter-spacing: .06em;
+    }
+    .rnc-cannot-btn {
+      padding: 9px 14px;
+      font-size: 13px; font-weight: 700; font-family: var(--lk-font);
+      border: 1.5px solid var(--lk-line); border-radius: var(--lk-r-md);
+      background: transparent; color: var(--lk-muted); cursor: pointer;
+      transition: all .15s;
+    }
+    .rnc-cannot-btn:not([disabled]):hover { border-color: var(--lk-indigo); color: var(--lk-ink); }
+    .rnc-cannot-btn.selected {
+      border-color: var(--lk-violet); color: var(--lk-ink);
+      background: rgba(168,85,247,.12);
+    }
+    .rnc-cannot-btn[disabled] { cursor: default; }
+
+    /* ─── Финальный экран ─── */
+    #final-screen { display: none; margin-top: 6px; }
+    #final-screen.show { display: block; animation: lk-in .5s ease; }
+    .final-inner { text-align: center; padding: 26px 20px; }
+    .final-unlock { font-size: 21px; font-weight: 900; margin-bottom: 12px; }
+    .final-tease {
+      font-size: 15px; line-height: 1.65; color: var(--lk-muted); margin-bottom: 16px;
+    }
+    .final-counter { font-family: var(--lk-mono); font-size: 13px; color: var(--lk-muted); }
+    .final-counter b { color: var(--lk-violet); font-size: 20px; }
+
+    /* ─── Адаптив ─── */
+    @media (max-width: 380px) {
+      .fb-eq { font-size: 20px; }
+      .rnc-frac-box { font-size: 18px; }
+    }
+  </style>
+</head>
+<body class="lk-page">
+
+  <header class="hw-header" id="hw-header" hidden>
+    <div class="hw-header-inner">
+      <span class="hw-prog-label" id="prog-label">0 из 7</span>
+      <div class="lk-progress">
+        <div class="lk-fill" id="prog-fill" style="width:0%"></div>
+      </div>
+      <span class="streak-pill" id="streak-pill" hidden></span>
+    </div>
+  </header>
+
+  <div class="lk-app" style="padding-top:22px">
+
+    <!-- ─── Старт-обложка ─── -->
+    <div id="cover" class="cover">
+      <div class="lk-kicker" id="cv-kicker"></div>
+      <h1 class="lk-h1" id="cv-title"></h1>
+      <p class="lk-lead" id="cv-lead"></p>
+      <div class="cover-meta" id="cv-meta"></div>
+      <button class="lk-btn cover-btn" id="cv-start">Поехали 🚀</button>
+      <div class="lk-sign" style="margin-top:24px">
+        <span class="lk-badge lk-badge-l">Λ</span>
+        <span class="lk-badge lk-badge-di">Di</span>
+      </div>
+    </div>
+
+    <div id="tasks-container" hidden></div>
+
+    <div id="final-screen">
+      <div class="lk-card final-inner">
+        <div class="final-tier" id="final-tier"></div>
+        <div class="final-unlock" id="final-unlock"></div>
+        <p class="final-tease" id="final-tease"></p>
+        <p class="final-counter" id="final-counter"></p>
+      </div>
+      <div class="lk-sign" style="margin-top:20px">
+        <span class="lk-badge lk-badge-l">Λ</span>
+        <span class="lk-badge lk-badge-di">Di</span>
+      </div>
+      <div style="height:32px"></div>
+    </div>
+  </div>
+
+  <script src="app.js?v=1"></script>
+</body>
+</html>
