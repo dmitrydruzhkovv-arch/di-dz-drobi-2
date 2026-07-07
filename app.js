@@ -62,6 +62,41 @@ let checkedCount = 0;
 let firstTryCount = 0;
 let streak = 0;
 let DATA = null;
+let reported = false;
+let startTs = null, startPerf = null;   // старт для показа (Date) + честная длительность (performance.now)
+
+// Время: started_at — локальный ISO для показа D.; длительность — по performance.now (не зависит от часов/пояса).
+function localIso(d) {
+  const p = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function fmtDur(sec) {
+  if (sec == null) return null;
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m ? `${m} мин ${s} с` : `${s} с`;
+}
+
+// ── ОТЧЁТ РЕПЕТИТОРУ (#38) ────────────────────────────────────────────────────
+const HW_ID = 'dz_drobi_urok2';
+const HW_ENDPOINT = 'https://194-87-110-53.nip.io/hw-result';
+function hwToken() { const p = new URLSearchParams(location.search); return (p.get('u') || p.get('id') || '').slice(0, 40); }
+function reportResults(score, total) {
+  if (reported) return;
+  const token = hwToken();
+  if (!token) return;                 // нет ника — превью/без привязки
+  reported = true;
+  const errors = [];   // в этой модели (лента карточек) ошибки по номерам не копим — шлём только счёт
+  const hw = `${DATA.meta.kicker} — ${DATA.meta.title}`;
+  const durationSec = startPerf != null ? Math.round((performance.now() - startPerf) / 1000) : null;
+  const startedAt = startTs ? localIso(startTs) : null;
+  try {
+    fetch(HW_ENDPOINT, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, hw, hw_id: HW_ID, score, total, errors, started_at: startedAt, duration_sec: durationSec }),
+      keepalive: true
+    }).catch(() => {});
+  } catch (e) {}
+}
 
 function updateStreak() {
   const pill = document.getElementById('streak-pill');
@@ -103,6 +138,36 @@ function showFinal() {
   document.getElementById('final-tier').textContent = tier;
   document.getElementById('final-counter').innerHTML =
     `<b>${firstTryCount}</b> ${DATA.final.counter_label} из ${total}`;
+
+  // Единый блок «цифры» (стандарт): верно/всего · точность · время.
+  reportResults(firstTryCount, total);
+  const pct = total ? Math.round(firstTryCount / total * 100) : 0;
+  const durSec = startPerf != null ? Math.round((performance.now() - startPerf) / 1000) : null;
+  const durTxt = fmtDur(durSec);
+  const statsHtml = `
+    <div class="fin-stats" style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 4px">
+      <div style="flex:1;min-width:88px;text-align:center;padding:12px 8px;border-radius:14px;background:rgba(124,108,240,.12);border:1px solid rgba(124,108,240,.28)">
+        <div style="font-size:26px;font-weight:700;line-height:1">${firstTryCount}<span style="font-size:15px;opacity:.6">/${total}</span></div>
+        <div style="font-size:11px;opacity:.7;margin-top:3px">с первого раза</div>
+      </div>
+      <div style="flex:1;min-width:88px;text-align:center;padding:12px 8px;border-radius:14px;background:rgba(79,169,255,.12);border:1px solid rgba(79,169,255,.28)">
+        <div style="font-size:26px;font-weight:700;line-height:1">${pct}<span style="font-size:15px;opacity:.6">%</span></div>
+        <div style="font-size:11px;opacity:.7;margin-top:3px">точность</div>
+      </div>
+      ${durTxt ? `<div style="flex:1;min-width:88px;text-align:center;padding:12px 8px;border-radius:14px;background:rgba(91,191,138,.12);border:1px solid rgba(91,191,138,.28)">
+        <div style="font-size:20px;font-weight:700;line-height:1.2">${durTxt}</div>
+        <div style="font-size:11px;opacity:.7;margin-top:3px">время</div>
+      </div>` : ''}
+    </div>`;
+  const host = document.getElementById('fin-extra');
+  if (host) {
+    host.innerHTML = statsHtml
+      + (reported ? `<p class="send-note" style="font-size:12px;color:var(--lk-muted);text-align:center;margin-top:12px;line-height:1.5">✅ Результат уже отправлен репетитору — он увидит, что освоено, а что подтянуть.</p>` : '')
+      + `<button id="btn-retry" class="lk-btn" style="width:100%;margin-top:16px;padding:14px;border-radius:14px;font-size:15px;font-weight:600;background:rgba(124,108,240,.14);border:1px solid rgba(124,108,240,.35);color:inherit;cursor:pointer">🔁 Пройти заново</button>`;
+    const retry = document.getElementById('btn-retry');
+    if (retry) retry.addEventListener('click', () => location.reload());
+  }
+
   el.classList.add('show');
   el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -488,21 +553,13 @@ function buildTask(task) {
 function init(data) {
   DATA = data;
 
-  document.getElementById('cv-kicker').textContent = data.meta.kicker;
-  document.getElementById('cv-title').textContent  = data.meta.title;
-  document.getElementById('cv-lead').textContent   = data.meta.cover_lead || data.meta.subtitle;
-  document.getElementById('cv-meta').textContent   =
-    `${data.tasks.length} заданий · ~${data.meta.minutes || 12} мин`;
-
   document.getElementById('final-unlock').textContent = data.final.unlock;
   document.getElementById('final-tease').textContent  = data.final.tease;
 
-  document.getElementById('cv-start').addEventListener('click', () => {
-    document.getElementById('cover').hidden           = true;
-    document.getElementById('hw-header').hidden       = false;
-    document.getElementById('tasks-container').hidden = false;
-    window.scrollTo(0, 0);
-  });
+  // Стартового экрана нет: по ссылке ученик сразу видит задания.
+  document.getElementById('hw-header').hidden       = false;
+  document.getElementById('tasks-container').hidden = false;
+  startTs = new Date(); startPerf = performance.now();   // засекаем начало работы
 
   const container = document.getElementById('tasks-container');
 
